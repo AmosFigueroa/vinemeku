@@ -1,0 +1,7 @@
+{
+  "name": "AniStream AI",
+  "description": "A modern anime streaming application powered by the Otakudesu API and enhanced with Google Gemini AI for smart recommendations and chat.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
