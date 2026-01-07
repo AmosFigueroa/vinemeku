@@ -208,15 +208,16 @@ export const getEpisodeStream = async (source: AnimeSource, slug: string): Promi
     if ((json.statusCode === 200 || json.status === 'Ok') && json.data) {
         const result = json.data;
         // The API returns a list of servers
-        const rawStreams = result.mirror_list || result.server_list || result.stream_list || [];
+        // Expanded to include 'url_list' and 'download_list' which sometimes contain streams
+        const rawStreams = result.mirror_list || result.server_list || result.stream_list || result.url_list || [];
         
         const stream_list = rawStreams.map((s: any) => ({
             resolution: s.quality || s.resolution || 'Standard',
             server: s.server || s.driver || s.host || 'Server',
-            url: s.url || '', 
-            // CRITICAL: Extract serverId to call /server/{serverId}
-            serverId: s.serverId || s.id || s.mirrorId || '' 
-        })).filter((s: any) => s.serverId || s.url);
+            url: s.url || s.stream_url || s.link || '', 
+            // CRITICAL: Robust ID extraction. API often switches field names.
+            serverId: s.serverId || s.id || s.mirrorId || s.hash || s.server_id || s._id || s.linkId || '' 
+        })).filter((s: any) => s.serverId || (s.url && s.url.startsWith('http')));
 
         return {
             title: result.title || slug,
@@ -237,17 +238,31 @@ export const getServerUrl = async (source: AnimeSource, serverId: string): Promi
         const json = await response.json();
 
         if ((json.statusCode === 200 || json.status === 'Ok') && json.data) {
-            const rawUrl = json.data.url || json.data.iframe || json.data.link || json.data.embed;
+            let rawUrl = '';
+            
+            // Handle if data is just a string
+            if (typeof json.data === 'string') {
+                rawUrl = json.data;
+            } else {
+                rawUrl = json.data.url || json.data.iframe || json.data.link || json.data.embed || json.data.playerUrl || '';
+            }
             
             if (!rawUrl) return null;
 
             // Smart extraction if the URL is actually an HTML iframe
+            // Enhanced Regex to capture src regardless of quote style
             if (rawUrl.includes('<iframe') || rawUrl.includes('&lt;iframe')) {
-                const srcMatch = rawUrl.match(/src=["'](.*?)["']/);
+                const srcMatch = rawUrl.match(/src\s*=\s*["']([^"']+)["']/i);
                 if (srcMatch && srcMatch[1]) {
-                    return srcMatch[1];
+                    rawUrl = srcMatch[1];
                 }
             }
+
+            // Fix protocol relative URLs
+            if (rawUrl.startsWith('//')) {
+                rawUrl = 'https:' + rawUrl;
+            }
+
             return rawUrl;
         }
         return null;

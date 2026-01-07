@@ -1,16 +1,17 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
 // Initialize Gemini Client
-// Note: In a real production app, ensure this is behind a backend proxy if you want to hide the key,
-// or restricts usage. For this demo, we use the env var directly as per instructions.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// The API key must be obtained exclusively from the environment variable process.env.API_KEY.
+const apiKey = process.env.API_KEY;
+
+const ai = new GoogleGenAI({ apiKey: apiKey || '' });
 
 export const getGeminiChatResponse = async (
   message: string, 
   context?: string
 ): Promise<string> => {
-  if (!process.env.API_KEY) {
-    return "API Key is missing. Please configure your environment.";
+  if (!apiKey) {
+    return "API Key is missing. Please configure API_KEY in your environment.";
   }
 
   try {
@@ -21,7 +22,7 @@ export const getGeminiChatResponse = async (
     If the user asks for recommendations, give 3 distinct options with a brief reason why.
     Keep responses concise (under 150 words) unless asked for more detail.`;
 
-    const model = 'gemini-3-flash-preview';
+    const model = 'gemini-3-flash-preview'; 
 
     const response: GenerateContentResponse = await ai.models.generateContent({
       model,
@@ -40,7 +41,7 @@ export const getGeminiChatResponse = async (
 };
 
 export const getGeminiSummary = async (title: string, synopsis: string): Promise<string> => {
-    if (!process.env.API_KEY) return synopsis;
+    if (!apiKey) return synopsis;
 
     try {
         const response: GenerateContentResponse = await ai.models.generateContent({

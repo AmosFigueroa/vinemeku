@@ -18,7 +18,7 @@ import {
 import { getJikanMetadata, getTopAnime } from './services/jikanService';
 import { getGeminiSummary } from './services/geminiService';
 import { AnimeSummary, SearchResult, AnimeDetail, StreamResponse, AnimeSource, PaginationInfo, Genre } from './types';
-import { Play, Clock, Info, ArrowLeft, Layers, Video, CheckCircle, ChevronLeft, ChevronRight, Hash, FolderOpen, Tag, Star, Film, Flame, Monitor, Tv, Plus, RefreshCw } from 'lucide-react';
+import { Play, Clock, Info, ArrowLeft, Layers, Video, CheckCircle, ChevronLeft, ChevronRight, Hash, FolderOpen, Tag, Star, Film, Flame, Monitor, Tv, Plus, RefreshCw, ExternalLink } from 'lucide-react';
 
 // --- Context for Global Source Management ---
 interface SourceContextType {
@@ -412,8 +412,11 @@ const WatchPage: React.FC = () => {
       // Clean HTML entities if any
       let clean = url.replace(/&amp;/g, '&');
       
+      // Ensure protocol
+      if (clean.startsWith('//')) clean = 'https:' + clean;
+
       // Determine type
-      if (clean.endsWith('.mp4') || clean.endsWith('.mkv')) {
+      if (clean.match(/\.(mp4|mkv|webm)$/i)) {
           setPlayerType('video');
       } else {
           setPlayerType('iframe');
@@ -423,7 +426,7 @@ const WatchPage: React.FC = () => {
 
   const handleServerClick = async (serverId: string, url?: string) => {
       // If direct URL is present and not an iframe string, use it
-      if (url && !url.includes('<iframe')) {
+      if (url && (url.startsWith('http') || url.startsWith('//')) && !url.includes('<iframe')) {
           setPlayerSource(url);
           return;
       }
@@ -449,7 +452,7 @@ const WatchPage: React.FC = () => {
        </button>
 
        {/* Video Player Container */}
-       <div className="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl shadow-primary/10 relative border border-white/10">
+       <div className="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl shadow-primary/10 relative border border-white/10 group">
          {serverLoading ? (
             <div className="flex flex-col items-center justify-center h-full gap-4">
                 <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -479,6 +482,18 @@ const WatchPage: React.FC = () => {
                 <Monitor className="w-20 h-20 opacity-20" />
                 <p className="text-lg font-medium tracking-wide">CHOOSE A SERVER TO START STREAM</p>
             </div>
+         )}
+         
+         {/* External Link Button Overlay */}
+         {currentUrl && (
+             <a 
+                href={currentUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="absolute top-4 right-4 bg-black/60 hover:bg-primary text-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm z-50 flex items-center gap-2 text-xs font-bold uppercase tracking-wider"
+             >
+                 <ExternalLink className="w-4 h-4" /> Open External
+             </a>
          )}
        </div>
 
